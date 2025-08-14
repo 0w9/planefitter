@@ -103,34 +103,40 @@ const calculateBreakevenHours = (aircraft: Aircraft) => {
 
 // Component to handle map bounds fitting
 const MapController = dynamic(
-  () => Promise.resolve(({ rangeKm, centerCoords }: { rangeKm: number, centerCoords: [number, number] }) => {
-    const useMap = require('react-leaflet').useMap
-    const L = require('leaflet')
-    const map = useMap()
-    
-    useEffect(() => {
-      if (map && rangeKm && centerCoords) {
-        // Calculate the bounds of the circle with 20% padding
-        const rangeInMeters = rangeKm * 1000
-        const paddingFactor = 1.2 // 20% padding
-        const paddedRange = rangeInMeters * paddingFactor
+  () => import('react-leaflet').then(({ useMap }) => 
+    ({ rangeKm, centerCoords }: { rangeKm: number, centerCoords: [number, number] }) => {
+      const map = useMap()
+      
+      useEffect(() => {
+        const loadLeaflet = async () => {
+          const L = await import('leaflet')
+          
+          if (map && rangeKm && centerCoords) {
+            // Calculate the bounds of the circle with 20% padding
+            const rangeInMeters = rangeKm * 1000
+            const paddingFactor = 1.2 // 20% padding
+            const paddedRange = rangeInMeters * paddingFactor
+            
+            // Convert meters to degrees (approximate)
+            const metersPerDegree = 111319.9 // meters per degree at equator
+            const latDelta = paddedRange / metersPerDegree
+            const lngDelta = paddedRange / (metersPerDegree * Math.cos(centerCoords[0] * Math.PI / 180))
+            
+            const bounds = L.latLngBounds([
+              [centerCoords[0] - latDelta, centerCoords[1] - lngDelta],
+              [centerCoords[0] + latDelta, centerCoords[1] + lngDelta]
+            ])
+            
+            map.fitBounds(bounds)
+          }
+        }
         
-        // Convert meters to degrees (approximate)
-        const metersPerDegree = 111319.9 // meters per degree at equator
-        const latDelta = paddedRange / metersPerDegree
-        const lngDelta = paddedRange / (metersPerDegree * Math.cos(centerCoords[0] * Math.PI / 180))
-        
-        const bounds = L.latLngBounds([
-          [centerCoords[0] - latDelta, centerCoords[1] - lngDelta],
-          [centerCoords[0] + latDelta, centerCoords[1] + lngDelta]
-        ])
-        
-        map.fitBounds(bounds)
-      }
-    }, [map, rangeKm, centerCoords])
-    
-    return null
-  }),
+        loadLeaflet()
+      }, [map, rangeKm, centerCoords])
+      
+      return null
+    }
+  ),
   { ssr: false }
 )
 
@@ -215,7 +221,7 @@ export default function PlanePage() {
           ← Back to Aircraft List
         </button>
         <h1 className="text-lg mb-5">Aircraft Not Found</h1>
-        <p>The aircraft you're looking for doesn't exist in our database.</p>
+        <p>The aircraft you&apos;re looking for doesn&apos;t exist in our database.</p>
       </div>
     )
   }
