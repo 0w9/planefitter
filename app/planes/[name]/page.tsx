@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css'
 import 'leaflet-defaulticon-compatibility'
+import { ThemeToggle } from '../../components/ThemeToggle'
 
 const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false })
 const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false })
@@ -30,7 +31,9 @@ interface Aircraft {
   yearlyCosts: string
   yearlyCostsAmount: number
   rangeKm: number
+  imageUrl?: string
 }
+
 
 interface Airport {
   id: string
@@ -72,7 +75,28 @@ const aircraft: Aircraft[] = [
     purchasePriceAmount: 100000,
     yearlyCosts: "€25,000-35,000",
     yearlyCostsAmount: 30000,
-    rangeKm: 1040
+    rangeKm: 1040,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Cessna_172S_Skyhawk_SP%2C_Private_JP6817606.jpg/960px-Cessna_172S_Skyhawk_SP%2C_Private_JP6817606.jpg"
+  },
+  {
+    name: "VL3",
+    charterCost: "€180-250/hour",
+    charterCostPerHour: 215,
+    emptyWeight: "315 kg",
+    maxWeight: "600 kg",
+    passengers: "1 + 1 pilot",
+    storage: "20 kg baggage",
+    cruiseSpeed: "240 km/h",
+    range: "1200 km",
+    fuelUsage: "18 L/hour",
+    operatingCost: "€80/hour",
+    operatingCostPerHour: 80,
+    purchasePrice: "€120,000",
+    purchasePriceAmount: 120000,
+    yearlyCosts: "€18,000-25,000",
+    yearlyCostsAmount: 21500,
+    rangeKm: 1200,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/7/78/20180617_Knokke_le_Zoute_Air_Trophy_%28620%29_copie-border_%2841983282845%29.jpg"
   }
 ]
 
@@ -83,6 +107,7 @@ const getAircraftSlug = (name: string) => {
 const findAircraftBySlug = (slug: string) => {
   return aircraft.find(plane => getAircraftSlug(plane.name) === slug.toUpperCase())
 }
+
 
 const calculateBreakevenHours = (aircraft: Aircraft) => {
   // Breakeven calculation:
@@ -210,6 +235,7 @@ export default function PlanePage() {
   
   const breakevenHours = selectedAircraft ? calculateBreakevenHours(selectedAircraft) : null
 
+
   if (!selectedAircraft) {
     return (
       <div className="max-w-4xl mx-auto p-5 font-mono text-sm">
@@ -228,52 +254,18 @@ export default function PlanePage() {
 
   return (
     <div className="max-w-6xl mx-auto p-5 font-mono text-sm">
-      <button 
-        onClick={() => router.push('/')}
-        className="mb-4 text-blue-600 hover:underline"
-      >
-        ← Back to Aircraft List
-      </button>
+      <div className="flex justify-between items-center mb-4">
+        <button 
+          onClick={() => router.push('/')}
+          className="text-blue-600 hover:underline"
+        >
+          ← Back to Aircraft List
+        </button>
+        <ThemeToggle />
+      </div>
       
       <h1 className="text-lg mb-5">{selectedAircraft.name}</h1>
       
-      <div className="mb-6">
-        <label className="block text-sm font-bold mb-2">Homebase Airport:</label>
-        <div className="relative">
-          <input
-            type="text"
-            value={airportSearch}
-            onChange={(e) => setAirportSearch(e.target.value)}
-            placeholder="Search airports (ICAO, name, city)..."
-            className="w-full p-2 border border-gray-300 font-mono text-sm"
-          />
-          {filteredAirports.length > 0 && (
-            <div className="absolute z-10 w-full bg-white border border-gray-300 border-t-0 max-h-60 overflow-y-auto">
-              {filteredAirports.map((airport) => (
-                <div
-                  key={airport.id}
-                  className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
-                  onClick={() => {
-                    setSelectedAirport(airport)
-                    setAirportSearch('')
-                    setFilteredAirports([])
-                  }}
-                >
-                  <div className="font-bold">{airport.name}</div>
-                  <div className="text-gray-600">
-                    {airport.icao_code} • {airport.municipality}, {airport.iso_country}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        {selectedAirport && (
-          <div className="mt-2 text-sm text-gray-600">
-            Selected: {selectedAirport.name} ({selectedAirport.icao_code})
-          </div>
-        )}
-      </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-6">
@@ -316,14 +308,52 @@ export default function PlanePage() {
               )}
             </div>
           </div>
+
         </div>
 
-        <div className="border border-gray-300">
-          <div className="p-3 border-b border-gray-200 font-bold">
+        <div>
+          <div className="p-3 border border-gray-300 dark:border-gray-600 border-b-0 font-bold">
             Range from {selectedAirport?.name || 'Kiel Airport'} ({selectedAirport?.icao_code || 'EDHK'})
           </div>
-          <div className="h-96">
-            {isClient && selectedAirport && (
+          <div className="p-3 border border-gray-300 dark:border-gray-600 border-b-0">
+            <label className="block text-sm font-bold mb-2">Homebase Airport:</label>
+            <div className="relative">
+              <input
+                type="text"
+                value={airportSearch}
+                onChange={(e) => setAirportSearch(e.target.value)}
+                placeholder="Search airports (ICAO, name, city)..."
+                className="w-full p-2 border border-gray-300 font-mono text-sm"
+              />
+              {filteredAirports.length > 0 && (
+                <div className="absolute z-10 w-full bg-white border border-gray-300 border-t-0 max-h-60 overflow-y-auto">
+                  {filteredAirports.map((airport) => (
+                    <div
+                      key={airport.id}
+                      className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
+                      onClick={() => {
+                        setSelectedAirport(airport)
+                        setAirportSearch('')
+                        setFilteredAirports([])
+                      }}
+                    >
+                      <div className="font-bold">{airport.name}</div>
+                      <div className="text-gray-600">
+                        {airport.icao_code} • {airport.municipality}, {airport.iso_country}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {selectedAirport && (
+              <div className="mt-2 text-sm text-gray-600">
+                Selected: {selectedAirport.name} ({selectedAirport.icao_code})
+              </div>
+            )}
+          </div>
+          {isClient && selectedAirport && (
+            <div className="border border-gray-300 dark:border-gray-600 h-64">
               <MapContainer
                 center={homebaseCoords}
                 zoom={6}
@@ -343,8 +373,24 @@ export default function PlanePage() {
                   pathOptions={{ color: 'blue', fillColor: 'blue', fillOpacity: 0.1 }}
                 />
               </MapContainer>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* Aircraft Photo */}
+          {selectedAircraft.imageUrl && (
+            <div className="mt-6">
+              <div className="p-3 border border-gray-300 dark:border-gray-600 border-b-0 font-bold">
+                Image
+              </div>
+              <div className="border border-gray-300 dark:border-gray-600 overflow-hidden">
+                <img 
+                  src={selectedAircraft.imageUrl}
+                  alt={`${selectedAircraft.name} aircraft`}
+                  className="w-full h-auto object-cover"
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
